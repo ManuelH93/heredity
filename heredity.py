@@ -195,7 +195,7 @@ def joint_probability(people, one_gene, two_genes, have_trait):
     df['scenario'] = df.apply(scenarios, axis=1)
 
     # Calculate probability of having number of genes
-    # specified in input tp the functin             
+    # specified in input to joint probability functin             
     df['prob_gene'] = df.apply(prob_gene, args=(one_gene, two_genes), axis=1)
 
     # Depending on 'have_trait', the below calculates the probability
@@ -287,7 +287,7 @@ def scenarios(row):
         return 'p_12'
 
 
-def con_prob_0(row):
+def prob_0(row):
     """
     Returns probability of having no gene,
     given different possible distributions of
@@ -307,7 +307,7 @@ def con_prob_0(row):
         return 0.50 * 0.01
 
 
-def con_prob_1(row):
+def prob_1(row):
     """
     Returns probability of having one gene,
     given different possible distributions of
@@ -327,7 +327,7 @@ def con_prob_1(row):
         return 0.99 * 0.50 + 0.01 * 0.50
 
 
-def con_prob_2(row):
+def prob_2(row):
     """
     Returns probability of having two genes,
     given different possible distributions of
@@ -358,11 +358,11 @@ def prob_gene(row, one_gene, two_genes):
     # Conditional probability if parents known
     else:
         if row.name in one_gene:
-            return con_prob_1(row)
+            return prob_1(row)
         elif row.name in two_genes:
-            return con_prob_2(row)
+            return prob_2(row)
         else:
-            return con_prob_0(row)
+            return prob_0(row)
 
 
 if __name__ == "__main__":
