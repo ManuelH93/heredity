@@ -365,6 +365,5 @@ def prob_gene(row, one_gene, two_genes):
             return con_prob_0(row)
 
 
-
 if __name__ == "__main__":
     main()
