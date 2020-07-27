@@ -78,8 +78,119 @@ one_gene = {'Harry'}
 two_genes = {'James'}
 have_trait = {'James'}
 
+def scenarios(row):
+    """
+    Determine and return scenario.
+
+    When calculating the probability that a child has a certain
+    amount of genes, we need to first determine how the gene
+    is distributed across the parents. There are six possible
+    scenarios which are relevant for our calculation.
+    """
+    # No parent has gene
+    if (row['mother_genes'] == 0) and row['father_genes'] == 0:
+        return 'p_00'
+    # Both parents have one gene
+    if (row['mother_genes'] == 1) and row['father_genes'] == 1:
+        return 'p_11'
+    # Both parents have two genes
+    if (row['mother_genes'] == 2) and row['father_genes'] == 2:
+        return 'p_22'
+    # One parent has zero genes, one parent has one gene 
+    if (row['mother_genes'] == 0) and row['father_genes'] == 1:
+        return 'p_01'
+    if (row['mother_genes'] == 1) and row['father_genes'] == 0:
+        return 'p_01'
+    # One parent has zero genes, one parent has two genes 
+    if (row['mother_genes'] == 0) and row['father_genes'] == 2:
+        return 'p_02'
+    if (row['mother_genes'] == 2) and row['father_genes'] == 0:
+        return 'p_02'
+    # One parent has one gene, one parent has two genes 
+    if (row['mother_genes'] == 1) and row['father_genes'] == 2:
+        return 'p_12'
+    if (row['mother_genes'] == 2) and row['father_genes'] == 1:
+        return 'p_12'
+
+
+def con_prob_0(row):
+    """
+    Returns probability of having no gene,
+    given different possible distributions of
+    gene for parents.
+    """
+    if row['scenario'] == 'p_00':
+        return 0.99 * 0.99
+    if row['scenario'] == 'p_11':
+        return 0.5 * 0.5
+    if row['scenario'] == 'p_22':
+        return 0.01 * 0.01
+    if row['scenario'] == 'p_01':
+        return 0.50 * 0.99
+    if row['scenario'] == 'p_02':
+        return 0.99 * 0.01
+    if row['scenario'] == 'p_12':
+        return 0.50 * 0.01
+
+def con_prob_1(row):
+    """
+    Returns probability of having one gene,
+    given different possible distributions of
+    gene for parents.
+    """
+    if row['scenario'] == 'p_00':
+        return 0.01 * 0.99 + 0.01 * 0.99
+    if row['scenario'] == 'p_11':
+        return 0.50 * 0.50 + 0.50 * 0.50
+    if row['scenario'] == 'p_22':
+        return 0.99 * 0.01 + 0.01 * 0.99
+    if row['scenario'] == 'p_01':
+        return 0.50 * 0.99 + 0.01 * 0.50
+    if row['scenario'] == 'p_02':
+        return 0.99 * 0.99 + 0.01 * 0.01
+    if row['scenario'] == 'p_12':
+        return 0.99 * 0.50 + 0.01 * 0.50
+
+def con_prob_2(row):
+    """
+    Returns probability of having two genes,
+    given different possible distributions of
+    gene for parents.
+    """
+    if row['scenario'] == 'p_00':
+        return 0.01 * 0.01
+    if row['scenario'] == 'p_11':
+        return 0.5 * 0.5
+    if row['scenario'] == 'p_22':
+        return 0.99 * 0.99
+    if row['scenario'] == 'p_01':
+        return 0.50 * 0.01
+    if row['scenario'] == 'p_02':
+        return 0.99 * 0.01
+    if row['scenario'] == 'p_12':
+        return 0.50 * 0.99
+
+def prob_gene(row):
+    """
+    Returns probability for having a
+    specific number of genes.
+    """
+    # Uncodnitional probability of parents unknown
+    if row['scenario'] == None:
+        return PROBS['gene'][row.genes]
+    # Conditional probability if parents known
+    else:
+        if row.name in one_gene:
+            return con_prob_1(row)
+        elif row.name in two_genes:
+            return con_prob_2(row)
+        else:
+            return con_prob_0(row)
+
 #def joint_probability(people, one_gene, two_genes, have_trait):
 
+# Create dataframe that stores name, genes, parent genes and trait
+# for each person.
 names = [name for name in set(people)]
 
 genes = []
@@ -121,115 +232,27 @@ for name in set(people):
         trait.append(True)
     else: trait.append(False)
 
-
-
 listofkeys = ('name', 'genes', 'mother_genes', 'father_genes', 'trait')
 listofvalues = (names, genes, mother_genes, father_genes, trait)
 dictionary=dict(zip(listofkeys,listofvalues))
 df = pd.DataFrame(dictionary)
 df.set_index('name', inplace=True)
 
-def scenarios(row):
-    # No parent has gene
-    if (row['mother_genes'] == 0) and row['father_genes'] == 0:
-        return 'p_00'
-    # Both parents have one gene
-    if (row['mother_genes'] == 1) and row['father_genes'] == 1:
-        return 'p_11'
-    # Both parents have two genes
-    if (row['mother_genes'] == 2) and row['father_genes'] == 2:
-        return 'p_22'
-    # One parent has zero genes, one parent has one gene 
-    if (row['mother_genes'] == 0) and row['father_genes'] == 1:
-        return 'p_01'
-    if (row['mother_genes'] == 1) and row['father_genes'] == 0:
-        return 'p_01'
-    # One parent has zero genes, one parent has two genes 
-    if (row['mother_genes'] == 0) and row['father_genes'] == 2:
-        return 'p_02'
-    if (row['mother_genes'] == 2) and row['father_genes'] == 0:
-        return 'p_02'
-    # One parent has one gene, one parent has two genes 
-    if (row['mother_genes'] == 1) and row['father_genes'] == 2:
-        return 'p_12'
-    if (row['mother_genes'] == 2) and row['father_genes'] == 1:
-        return 'p_12'
-    
-# Scenarios:
+# Determine how gene is distributed across parents,
+# if parents are known
 df['scenario'] = df.apply(scenarios, axis=1)
-#print(df)
 
-def con_prob_0(row):
-    # Probability of getting no gene dependent on parents genes
-    if row['scenario'] == 'p_00':
-        return 0.99 * 0.99
-    if row['scenario'] == 'p_11':
-        return 0.5 * 0.5
-    if row['scenario'] == 'p_22':
-        return 0.01 * 0.01
-    if row['scenario'] == 'p_01':
-        return 0.50 * 0.99
-    if row['scenario'] == 'p_02':
-        return 0.99 * 0.01
-    if row['scenario'] == 'p_12':
-        return 0.50 * 0.01
-
-def con_prob_1(row):
-    # Probability of getting one gene dependent on parents genes
-    if row['scenario'] == 'p_00':
-        return 0.01 * 0.99 + 0.01 * 0.99
-    if row['scenario'] == 'p_11':
-        return 0.50 * 0.50 + 0.50 * 0.50
-    if row['scenario'] == 'p_22':
-        return 0.99 * 0.01 + 0.01 * 0.99
-    if row['scenario'] == 'p_01':
-        return 0.50 * 0.99 + 0.01 * 0.50
-    if row['scenario'] == 'p_02':
-        return 0.99 * 0.99 + 0.01 * 0.01
-    if row['scenario'] == 'p_12':
-        return 0.99 * 0.50 + 0.01 * 0.50
-
-def con_prob_2(row):
-    # Probability of getting two genes dependent on parents genes
-    if row['scenario'] == 'p_00':
-        return 0.01 * 0.01
-    if row['scenario'] == 'p_11':
-        return 0.5 * 0.5
-    if row['scenario'] == 'p_22':
-        return 0.99 * 0.99
-    if row['scenario'] == 'p_01':
-        return 0.50 * 0.01
-    if row['scenario'] == 'p_02':
-        return 0.99 * 0.01
-    if row['scenario'] == 'p_12':
-        return 0.50 * 0.99
-
-df['con_prob_0'] = df.apply(con_prob_0, axis=1)
-df['con_prob_1'] = df.apply(con_prob_1, axis=1)
-df['con_prob_2'] = df.apply(con_prob_2, axis=1)
-
-#df['un_prob_gene'] = df.apply (lambda row: PROBS['gene'][row.genes], axis=1)
-
-def prob_gene(row):
-    if row['scenario'] == None:
-        return PROBS['gene'][row.genes]
-    else:
-        if row.name in one_gene:
-            return con_prob_1(row)
-        elif row.name in two_genes:
-            return con_prob_2(row)
-        else:
-            return con_prob_0(row)
-                
+# Calculate probability of having number of genes
+# specified in input tp the functin             
 df['prob_gene'] = df.apply(prob_gene, axis=1)
 
+# Depending on 'have_trait', the below calculates the probability
+# that an individual either has or doesn't have the trait.
+df['prob_trait'] = df.apply (lambda row: PROBS['trait'][row.genes][row.trait], axis=1)
 
+# Combined probability of genes and trait
+df['prob_combined'] = df.apply (lambda row: row.prob_gene * row.prob_trait, axis=1)
 
-#df['un_prob_trait'] = df.apply (lambda row: PROBS['trait'][row.genes][row.trait], axis=1)
-# Combined probability of genes and trait is zero if we know the parent
-#df['un_prob_combined'] = df.apply (lambda row: row.un_prob_gene * row.un_prob_trait * (1 - row.parents), axis=1)
-
-#df.loc[df['genes'] == 1, 'con_prob_gene'] = df.apply (lambda row: row.parents + 1, axis=1)
-print(df)
-
-
+# Joint probability
+result = df['prob_combined'].product(axis = 0)
+print(result)
