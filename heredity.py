@@ -1,7 +1,8 @@
 import csv
 import itertools
 import sys
-import numpy
+import pandas as pd
+import numpy as np
 
 PROBS = {
 
@@ -140,156 +141,72 @@ def joint_probability(people, one_gene, two_genes, have_trait):
         * everyone in set `have_trait` has the trait, and
         * everyone not in set` have_trait` does not have the trait.
     """
-    probs = []
-    for person in set(people):
-        # People for whom we don't know the parents
-        if people[person]['mother'] == None and people[person]['father'] == None:
-            # Prob no gene and no trait
-            if person not in one_gene and person not in two_genes and person not in have_trait:
-                probs.append(PROBS["gene"][0] * PROBS["trait"][0][False])
-            # Prob no gene and trait
-            if person not in one_gene and person not in two_genes and person in have_trait:
-                probs.append(PROBS["gene"][0] * PROBS["trait"][0][True])
-            # Prob one gene and no trait
-            if person in one_gene and person not in have_trait:
-                probs.append(PROBS["gene"][1] * PROBS["trait"][1][False])
-            # Prob one gene and trait
-            if person in one_gene and person in have_trait:
-                probs.append(PROBS["gene"][1] * PROBS["trait"][1][True])
-            # Prob two genes and no trait
-            if person in two_genes and person not in have_trait:
-                probs.append(PROBS["gene"][2] * PROBS["trait"][2][False])
-            # Prob two gene and trait
-            if person in two_genes and person in have_trait:
-                probs.append(PROBS["gene"][2] * PROBS["trait"][2][True])
-        # People for whom we know the parents
-        if people[person]['mother'] != None and people[person]['father'] != None:
-            mother = people[person]['mother']
-            father = people[person]['father']
-            # Prob no gene and no trait
-            if person not in one_gene and person not in two_genes and person not in have_trait:
-                # If no parent has gene
-                    if mother not in one_gene and mother not in two_genes and father not in one_gene and father not in two_genes:
-                        probs.append((0.99 * 0.99) * PROBS["trait"][0][False])
-                # If both parents have one gene
-                    if mother in one_gene and father in one_gene:
-                        probs.append((0.5 * 0.5) * PROBS["trait"][0][False])
-                # If both parents have two genes
-                    if mother in two_genes and father in two_genes:
-                        probs.append((0.01 * 0.01) * PROBS["trait"][0][False])
-                # If one parent has no gene and one has one gene
-                    if mother not in one_gene and mother not in two_genes and father in one_gene or father not in one_gene and father not in two_genes and mother in one_gene:
-                        probs.append((0.50 * 0.99) * PROBS["trait"][0][False])
-                # If one parent has no gene and one has two genes
-                    if mother not in one_gene and mother not in two_genes and father in two_genes or father not in one_gene and father not in two_genes and mother in two_genes:
-                        probs.append((0.99 * 0.01) * PROBS["trait"][0][False])
-                # If one parent has one gene and one has two genes
-                    if mother in one_gene and father in two_genes or father in one_gene and mother in two_genes:
-                        probs.append((0.50 * 0.01) * PROBS["trait"][0][False])
-            # Prob no gene and trait
-            if person not in one_gene and person not in two_genes and person in have_trait:
-                # If no parent has gene
-                    if mother not in one_gene and mother not in two_genes and father not in one_gene and father not in two_genes:
-                        probs.append((0.99 * 0.99) * PROBS["trait"][0][True])
-                # If both parents have one gene
-                    if mother in one_gene and father in one_gene:
-                        probs.append((0.5 * 0.5) * PROBS["trait"][0][True])
-                # If both parents have two genes
-                    if mother in two_genes and father in two_genes:
-                        probs.append((0.01 * 0.01) * PROBS["trait"][0][True])
-                # If one parent has no gene and one has one gene
-                    if mother not in one_gene and mother not in two_genes and father in one_gene or father not in one_gene and father not in two_genes and mother in one_gene:
-                        probs.append((0.50 * 0.99) * PROBS["trait"][0][True])
-                # If one parent has no gene and one has two genes
-                    if mother not in one_gene and mother not in two_genes and father in two_genes or father not in one_gene and father not in two_genes and mother in two_genes:
-                        probs.append((0.99 * 0.01) * PROBS["trait"][0][True])
-                # If one parent has one gene and one has two genes
-                    if mother in one_gene and father in two_genes or father in one_gene and mother in two_genes:
-                        probs.append((0.50 * 0.01) * PROBS["trait"][0][True])
-            
-            # Prob one gene and no trait
-            if person in one_gene and person not in have_trait:
-                # If no parent has gene
-                    if mother not in one_gene and mother not in two_genes and father not in one_gene and father not in two_genes:
-                        probs.append((0.01 * 0.99 + 0.01 * 0.99) * PROBS["trait"][1][False])
-                # If both parents have one gene
-                    if mother in one_gene and father in one_gene:
-                        probs.append((0.50 * 0.50 + 0.50 * 0.50) * PROBS["trait"][1][False])
-                # If both parents have two genes
-                    if mother in two_genes and father in two_genes:
-                        probs.append((0.99 * 0.01 + 0.01 * 0.99) * PROBS["trait"][1][False])
-                # If one parent has no gene and one has one gene
-                    if mother not in one_gene and mother not in two_genes and father in one_gene or father not in one_gene and father not in two_genes and mother in one_gene:
-                        probs.append((0.50 * 0.99 + 0.01 * 0.50) * PROBS["trait"][1][False])
-                # If one parent has no gene and one has two genes
-                    if mother not in one_gene and mother not in two_genes and father in two_genes or father not in one_gene and father not in two_genes and mother in two_genes:
-                        probs.append((0.99 * 0.99 + 0.01 * 0.01) * PROBS["trait"][1][False])
-                # If one parent has one gene and one has two genes
-                    if mother in one_gene and father in two_genes or father in one_gene and mother in two_genes:
-                        probs.append((0.99 * 0.50 + 0.01 * 0.50) * PROBS["trait"][1][False])
-            # Prob one gene and trait
-            if person in one_gene and person in have_trait:
-                # If no parent has gene
-                    if mother not in one_gene and mother not in two_genes and father not in one_gene and father not in two_genes:
-                        probs.append((0.01 * 0.99 + 0.01 * 0.99) * PROBS["trait"][1][True])
-                # If both parents have one gene
-                    if mother in one_gene and father in one_gene:
-                        probs.append((0.50 * 0.50 + 0.50 * 0.50) * PROBS["trait"][1][True])
-                # If both parents have two genes
-                    if mother in two_genes and father in two_genes:
-                        probs.append((0.99 * 0.01 + 0.01 * 0.99) * PROBS["trait"][1][True])
-                # If one parent has no gene and one has one gene
-                    if mother not in one_gene and mother not in two_genes and father in one_gene or father not in one_gene and father not in two_genes and mother in one_gene:
-                        probs.append((0.50 * 0.99 + 0.01 * 0.50) * PROBS["trait"][1][True])
-                # If one parent has no gene and one has two genes
-                    if mother not in one_gene and mother not in two_genes and father in two_genes or father not in one_gene and father not in two_genes and mother in two_genes:
-                        probs.append((0.99 * 0.99 + 0.01 * 0.01) * PROBS["trait"][1][True])
-                # If one parent has one gene and one has two genes
-                    if mother in one_gene and father in two_genes or father in one_gene and mother in two_genes:
-                        probs.append((0.99 * 0.50 + 0.01 * 0.50) * PROBS["trait"][1][True])
-            
-            # Prob two genes and no trait
-            if person in two_genes and person not in have_trait:
-                # If no parent has gene
-                    if mother not in one_gene and mother not in two_genes and father not in one_gene and father not in two_genes:
-                        probs.append((0.01 * 0.01) * PROBS["trait"][2][False])
-                # If both parents have one gene
-                    if mother in one_gene and father in one_gene:
-                        probs.append((0.5 * 0.5) * PROBS["trait"][2][False])
-                # If both parents have two genes
-                    if mother in two_genes and father in two_genes:
-                        probs.append((0.99 * 0.99) * PROBS["trait"][2][False])
-                # If one parent has no gene and one has one gene
-                    if mother not in one_gene and mother not in two_genes and father in one_gene or father not in one_gene and father not in two_genes and mother in one_gene:
-                        probs.append((0.50 * 0.01) * PROBS["trait"][2][False])
-                # If one parent has no gene and one has two genes
-                    if mother not in one_gene and mother not in two_genes and father in two_genes or father not in one_gene and father not in two_genes and mother in two_genes:
-                        probs.append((0.99 * 0.01) * PROBS["trait"][2][False])
-                # If one parent has one gene and one has two genes
-                    if mother in one_gene and father in two_genes or father in one_gene and mother in two_genes:
-                        probs.append((0.50 * 0.99) * PROBS["trait"][2][False])
-            # Prob two gene and trait
-            if person in two_genes and person in have_trait:
-                # If no parent has gene
-                    if mother not in one_gene and mother not in two_genes and father not in one_gene and father not in two_genes:
-                        probs.append((0.01 * 0.01) * PROBS["trait"][2][True])
-                # If both parents have one gene
-                    if mother in one_gene and father in one_gene:
-                        probs.append((0.5 * 0.5) * PROBS["trait"][2][True])
-                # If both parents have two genes
-                    if mother in two_genes and father in two_genes:
-                        probs.append((0.99 * 0.99) * PROBS["trait"][2][True])
-                # If one parent has no gene and one has one gene
-                    if mother not in one_gene and mother not in two_genes and father in one_gene or father not in one_gene and father not in two_genes and mother in one_gene:
-                        probs.append((0.50 * 0.01) * PROBS["trait"][2][True])
-                # If one parent has no gene and one has two genes
-                    if mother not in one_gene and mother not in two_genes and father in two_genes or father not in one_gene and father not in two_genes and mother in two_genes:
-                        probs.append((0.99 * 0.01) * PROBS["trait"][2][True])
-                # If one parent has one gene and one has two genes
-                    if mother in one_gene and father in two_genes or father in one_gene and mother in two_genes:
-                        probs.append((0.50 * 0.99) * PROBS["trait"][2][True])
-    
-    result = numpy.prod(probs)
+    # Create dataframe that stores name, genes, parent genes and trait
+    # for each person.
+    names = [name for name in set(people)]
+
+    genes = []
+    for name in set(people):
+        if name in one_gene:
+            genes.append(1)
+        elif name in two_genes:
+            genes.append(2)
+        else:
+            genes.append(0)
+
+    mother_genes = []
+    for name in set(people):
+        mother = people[name]['mother']
+        if mother == None:
+            mother_genes.append(np.nan)
+        elif mother in one_gene:
+            mother_genes.append(1)
+        elif mother in two_genes:
+            mother_genes.append(2)
+        else:
+            mother_genes.append(0)
+
+    father_genes = []
+    for name in set(people):
+        father = people[name]['father']
+        if father == None:
+            father_genes.append(np.nan)
+        elif father in one_gene:
+            father_genes.append(1)
+        elif father in two_genes:
+            father_genes.append(2)
+        else:
+            father_genes.append(0)
+
+    trait = []
+    for name in set(people):
+        if name in have_trait:
+            trait.append(True)
+        else: trait.append(False)
+
+    listofkeys = ('name', 'genes', 'mother_genes', 'father_genes', 'trait')
+    listofvalues = (names, genes, mother_genes, father_genes, trait)
+    dictionary=dict(zip(listofkeys,listofvalues))
+    df = pd.DataFrame(dictionary)
+    df.set_index('name', inplace=True)
+
+    # Determine how gene is distributed across parents,
+    # if parents are known
+    df['scenario'] = df.apply(scenarios, axis=1)
+
+    # Calculate probability of having number of genes
+    # specified in input tp the functin             
+    df['prob_gene'] = df.apply(prob_gene, args=(one_gene, two_genes), axis=1)
+
+    # Depending on 'have_trait', the below calculates the probability
+    # that an individual either has or doesn't have the trait.
+    df['prob_trait'] = df.apply (lambda row: PROBS['trait'][row.genes][row.trait], axis=1)
+
+    # Combined probability of genes and trait
+    df['prob_combined'] = df.apply (lambda row: row.prob_gene * row.prob_trait, axis=1)
+
+    # Joint probability
+    result = df['prob_combined'].product(axis = 0)
     return result
 
 
@@ -333,6 +250,120 @@ def normalize(probabilities):
             total_trait += probabilities[name]['trait'][k]
         for l in (True, False):
             probabilities[name]['trait'][l] = (probabilities[name]['trait'][l]) / total_trait
+
+
+def scenarios(row):
+    """
+    Determine and return scenario.
+
+    When calculating the probability that a child has a certain
+    amount of genes, we need to first determine how the gene
+    is distributed across the parents. There are six possible
+    scenarios which are relevant for our calculation.
+    """
+    # No parent has gene
+    if (row['mother_genes'] == 0) and row['father_genes'] == 0:
+        return 'p_00'
+    # Both parents have one gene
+    if (row['mother_genes'] == 1) and row['father_genes'] == 1:
+        return 'p_11'
+    # Both parents have two genes
+    if (row['mother_genes'] == 2) and row['father_genes'] == 2:
+        return 'p_22'
+    # One parent has zero genes, one parent has one gene 
+    if (row['mother_genes'] == 0) and row['father_genes'] == 1:
+        return 'p_01'
+    if (row['mother_genes'] == 1) and row['father_genes'] == 0:
+        return 'p_01'
+    # One parent has zero genes, one parent has two genes 
+    if (row['mother_genes'] == 0) and row['father_genes'] == 2:
+        return 'p_02'
+    if (row['mother_genes'] == 2) and row['father_genes'] == 0:
+        return 'p_02'
+    # One parent has one gene, one parent has two genes 
+    if (row['mother_genes'] == 1) and row['father_genes'] == 2:
+        return 'p_12'
+    if (row['mother_genes'] == 2) and row['father_genes'] == 1:
+        return 'p_12'
+
+
+def con_prob_0(row):
+    """
+    Returns probability of having no gene,
+    given different possible distributions of
+    gene for parents.
+    """
+    if row['scenario'] == 'p_00':
+        return 0.99 * 0.99
+    if row['scenario'] == 'p_11':
+        return 0.5 * 0.5
+    if row['scenario'] == 'p_22':
+        return 0.01 * 0.01
+    if row['scenario'] == 'p_01':
+        return 0.50 * 0.99
+    if row['scenario'] == 'p_02':
+        return 0.99 * 0.01
+    if row['scenario'] == 'p_12':
+        return 0.50 * 0.01
+
+
+def con_prob_1(row):
+    """
+    Returns probability of having one gene,
+    given different possible distributions of
+    gene for parents.
+    """
+    if row['scenario'] == 'p_00':
+        return 0.01 * 0.99 + 0.01 * 0.99
+    if row['scenario'] == 'p_11':
+        return 0.50 * 0.50 + 0.50 * 0.50
+    if row['scenario'] == 'p_22':
+        return 0.99 * 0.01 + 0.01 * 0.99
+    if row['scenario'] == 'p_01':
+        return 0.50 * 0.99 + 0.01 * 0.50
+    if row['scenario'] == 'p_02':
+        return 0.99 * 0.99 + 0.01 * 0.01
+    if row['scenario'] == 'p_12':
+        return 0.99 * 0.50 + 0.01 * 0.50
+
+
+def con_prob_2(row):
+    """
+    Returns probability of having two genes,
+    given different possible distributions of
+    gene for parents.
+    """
+    if row['scenario'] == 'p_00':
+        return 0.01 * 0.01
+    if row['scenario'] == 'p_11':
+        return 0.5 * 0.5
+    if row['scenario'] == 'p_22':
+        return 0.99 * 0.99
+    if row['scenario'] == 'p_01':
+        return 0.50 * 0.01
+    if row['scenario'] == 'p_02':
+        return 0.99 * 0.01
+    if row['scenario'] == 'p_12':
+        return 0.50 * 0.99
+
+
+def prob_gene(row, one_gene, two_genes):
+    """
+    Returns probability for having a
+    specific number of genes.
+    """
+    # Unconditional probability if parents unknown
+    if row['scenario'] == None:
+        return PROBS['gene'][row.genes]
+    # Conditional probability if parents known
+    else:
+        if row.name in one_gene:
+            return con_prob_1(row)
+        elif row.name in two_genes:
+            return con_prob_2(row)
+        else:
+            return con_prob_0(row)
+
 
 
 if __name__ == "__main__":
